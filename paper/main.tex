@@ -1,0 +1,243 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1.15in]{geometry}
+\usepackage[expansion=false]{microtype}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks,pdfencoding=auto]{hyperref}
+\hypersetup{pdftitle={Kernel-Checked Certificates for Erd\H{o}s Problem 835 in Lean 4: Johnson Graphs and Large Sets of Steiner Systems},
+  pdfauthor={Ibrahim Mian, Shayaan Siddique}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+
+% \lean: a Lean name, checked by scripts/lean_index.py against the sources.
+% \file: a path in this repository, checked to exist.
+% \ext: a name or commit in someone else's repository.
+\ExplSyntaxOn
+\NewDocumentCommand{\brktt}{m}{
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:Nnn \l_tmpa_tl {/} {/\allowbreak{}}
+  \tl_replace_all:Nnn \l_tmpa_tl {\_} {\_\allowbreak{}}
+  \tl_replace_all:Nnn \l_tmpa_tl {-} {-\allowbreak{}}
+  \tl_replace_all:Nnn \l_tmpa_tl {.} {.\allowbreak{}}
+  \textup{\texttt{\tl_use:N \l_tmpa_tl}}
+}
+\ExplSyntaxOff
+\newcommand{\lean}[1]{\brktt{#1}}
+\newcommand{\file}[1]{\brktt{#1}}
+\newcommand{\ext}[1]{\brktt{#1}}
+\newcommand{\LS}{\mathrm{LS}}
+\emergencystretch=2em
+
+\title{Kernel-Checked Certificates for Erd\H{o}s Problem 835 in Lean 4:\\ Johnson Graphs and Large Sets of Steiner Systems}
+\author{Ibrahim Mian\thanks{Corresponding author. Email: \texttt{ibrahimnmian@gmail.com}.} \qquad Shayaan Siddique\\[2pt]
+\normalsize Millennium Research}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a certificate checker for exact covers with symmetry reductions, proved sound in Lean 4, and use certificates replayed by the Lean kernel to check all known cases but one of Erd\H{o}s Problem 835. The problem asks whether for some $k>2$ the $k$-subsets of a $2k$-set can be coloured with $k+1$ colours so that every $(k+1)$-subset contains $k$-subsets of every colour; equivalently, whether the Johnson graph $J(2k,k)$ has chromatic number $k+1$. It is open. Its partial results rest on pen-and-paper proofs, on published computer searches and code tables, and on Lean proofs that assume axioms or were removed from the formal-conjectures repository. The development uses only the axioms of propositional extensionality, choice and quotient soundness, and no solver or native evaluation outside the kernel. Against the formal-conjectures definitions we prove: such a colouring exists exactly when the chromatic number is $k+1$, exactly when a large set of $k+1$ disjoint Steiner systems $S(k-1,k,2k)$ exists; $k+1$ must be prime (Ma and Tang); and Johnson's bound on the independence number. A checked search tree shows that no Steiner system $S(4,5,15)$ exists, which settles $k=10$; certificates of the same kind settle $k=4$ and $k=6$. The case $k=12$ follows from the non-existence of $S(4,5,17)$, which we cite. For the open cases we prove that a colouring for $k=16$ would give an $S(4,5,21)$, whose existence is open; that a colouring for an open $k \le 192$ would solve the FrontierMath problem on Steiner systems with $5<t<10$ and $n<200$; and, formalizing an observation posted by veljjanoski, that no colouring is invariant under a permutation of prime order $p$ with $k+1<p\le 2k$.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Erd\H{o}s Problem 835~\cite{EP835}, a problem of Erd\H{o}s and Rosenfeld~\cite{Er74}, is open. For $k \ge 1$ let $\mathrm{Property}(k)$ say that the $k$-subsets of a $2k$-set can be coloured with $k+1$ colours so that every $(k+1)$-subset contains $k$-subsets of every colour. The problem asks whether $\mathrm{Property}(k)$ holds for some $k>2$. It holds for $k=1,2$.
+
+A colouring with the property exists exactly when the colour classes form a large set of Steiner systems $S(k-1,k,2k)$, that is, $k+1$ Steiner systems whose block sets partition the $k$-subsets (athvedt on the problem's forum~\cite{Forum} proved that the colour classes form one; the converse is immediate); every $k$ with $k+1$ composite is ruled out (Ma and Tang~\cite{MaTang}; for Steiner systems this is the classical divisibility condition); and taking derived systems (the blocks through a fixed point, with the point removed) reduces $k=10$, $12$ and $16$ to Steiner systems $S(4,5,15)$, $S(4,5,17)$ and $S(4,5,21)$. The first two do not exist, by exhaustive computer searches~\cite{MendelsohnHung,OstergardPottonen}; the third is open~\cite{KolotogluMagliveras}. So the smallest open case is $k=16$.
+
+Little of this is checked by a kernel. The formal-conjectures repository~\cite{FC} states the problem in Lean and leaves unproved (as \texttt{sorry}) the equivalence with the chromatic number, Johnson's bound, the cases $3 \le k \le 8$, the case $k=9$, the composite case, and the odd case, whose upstream proof for $3 \le k \le 300$ uses the unproved Johnson bound. A Lean development by Bonfioli~\cite{Bonfioli} proves, on its own definitions, that each colour class is a Steiner system and that derivation reduces $S(k-1,k,2k)$ to $S(4,5,k+5)$; it takes the non-existence of $S(4,5,15)$ and $S(4,5,17)$ as axioms, and its certificates for $k=4,6$ check with \texttt{native\_decide} that no third system is disjoint from one explicit pair.
+
+This paper checks the known part of the resolution in Lean~4~\cite{Lean4} and Mathlib~\cite{Mathlib}, against the formal-conjectures definitions. The trusted base is the Lean kernel with three axioms. Every search needed for $k \le 15$, except the one for $S(4,5,17)$, is replaced by a certificate that the kernel replays.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item The equivalences $\mathrm{Property}(k) \iff \chi(J(2k,k)) = k+1 \iff$ a large set $\LS(k-1,k,2k)$ of $k+1$ systems exists, for every $k \ge 1$ (Section~\ref{sec:general}). With the results below this fills all seven formal-conjectures lemmas on the problem that are not open, with their exact statements (\file{Veles/Results.lean}, namespace \lean{Fills}).
+\item Ma and Tang's theorem for every $k \ge 1$, proved from derived systems and the block count, and Johnson's bound on the independence number, $\alpha(J(n,w)) \le b(n,w)$ where $b(n,w) = \lfloor \frac{n}{w}\, b(n-1,w-1) \rfloor$ for $w \ge 2$ and $b=1$ otherwise (upstream \lean{johnsonBound n 4 w}; one of the seven).
+\item A certificate checker for exact covers with symmetry reductions, with a soundness proof in Lean (Section~\ref{sec:checker}), and certificates that no $S(4,5,15)$ exists and that no large sets $\LS(3,4,8)$ and $\LS(5,6,12)$ exist (Section~\ref{sec:certs}). Together with the general theorems they settle $k \le 15$ except $k=12$. To our knowledge this is the first kernel-checked proof that no $S(4,5,15)$ exists.
+\item The frontier as theorems (Section~\ref{sec:frontier}): $\mathrm{Property}(16)$ gives an $S(4,5,21)$; $\mathrm{Property}(k)$ for an open $k \le 192$ (that is, $k+1$ prime and $16 \le k \le 192$) gives a solution of Epoch AI's FrontierMath problem ``Large Steiner Systems''~\cite{Epoch}; and a formalization of an observation posted by veljjanoski~\cite{Veljjanoski} that no colouring is invariant under a permutation of prime order $p$ with $k+1 < p \le 2k$ (for $k=16$, $p \in \{19,23,29,31\}$).
+\end{enumerate}
+Table~\ref{tab:cases} gives the status of every $k$ and what is checked here. The problem remains open.
+
+\section{The statement}\label{sec:statement}
+
+We copy, byte for byte, the following definitions (not whole files) of formal-conjectures at commit \ext{137aec5}~\cite{FC}: \lean{Erdos835.Property}, the Johnson graph \lean{SimpleGraph.johnson} with notation $J(n,k)$, \lean{Erdos835.johnsonBound}, \lean{SteinerSystems.SteinerSystem} with notation $S(t,k,n)$, \lean{SteinerSystems.LargeSteinerSystemWitness}, \lean{Nat.Composite}, and the notation $\alpha(G)$ for the independence number. The script \file{scripts/check\_upstream.py} checks the copies against the upstream files, whose SHA-256 hashes it pins, and fails on a one-character change. The definitions compile unchanged on Lean \texttt{v4.34.0-rc2} with Mathlib \ext{85e3a25}, newer than upstream's \texttt{v4.33.1}.
+
+$\mathrm{Property}(k)$ asks for a map $c$ from the $k$-subsets of \lean{Fin (2 * k)} to \lean{Fin (k + 1)} such that for every $(k+1)$-set $A$ the image under $c$ of the $k$-sets strictly contained in $A$ is all of \lean{Fin (k + 1)}. The vertices of $J(n,k)$ are the $k$-subsets of \lean{Fin n}; two are adjacent when they meet in $k-1$ points. A Steiner system $S(t,k,n)$ is a set of $k$-subsets of \lean{Fin n}, the blocks, such that every $t$-subset lies in exactly one block. A large set $\LS(t,k,n)$ of $m$ systems is a family of $m$ Steiner systems $S(t,k,n)$ whose block sets partition the $k$-subsets; this is the standard notion (then $m$ is determined by $t,k,n$), and since formal-conjectures has no definition of it, the Lean definition \lean{Veles.Steiner.LargeSet} is ours.
+
+\section{Related work}\label{sec:prior}
+
+\paragraph{The problem.} On the forum~\cite{Forum}, eigensolver (31 December 2025) first excluded $3 \le k \le 14$ from the published upper bounds on constant-weight codes~\cite{AVZ,AVZweb}: for instance $\alpha(J(20,10)) \le 16{,}652$ gives $\chi(J(20,10)) \ge 12$, and $\alpha(J(24,12)) \le 207{,}078$ gives $\chi(J(24,12)) \ge 14$. Later that day Tang, and eigensolver in an edit to his comment, suggested large sets of Steiner systems (both in the notation $S(2k,k,k-1)$), and Bloom pointed out that $\chi(J(6,3))=6$ gives $\chi(J(8,4)) \ge 6$ by monotonicity. That a $(k+1)$-colouring of $J(2k,k)$ is a large set of Steiner systems is the classical correspondence between colourings of Johnson graphs by codes and large sets (Brouwer~\cite{BrouwerJ} derives $\chi(J(n,3))=n-2$ from large sets of triple systems; see also Etzion and Bitan~\cite{EtzionBitan}); athvedt spelled it out for this problem and derived the systems $S(4,5,v)$ (21 May 2026). Ma and Tang proved that $k+1$ must be prime~\cite{MaTang}; Dillies noted that Johnson's bound gives the same exclusion (26 January 2026) and reported that AlphaProof had proved the case $k=9$ in Lean on 26 December 2025. That proof and its extension to odd $k \ge 10$ (commits by Firsching of 23 January 2026, \ext{efbe1f0} and \ext{046b8b8}) were free of \texttt{sorry} and were removed from formal-conjectures pull request 1428 before it was merged. The user edkirkby claimed (14 March 2026) and KentaKitamura proved (30 May 2026) that in any colouring for the open cases every $k$-set has the colour of its complement. The user veljjanoski excluded, for $k=16$, systems $S(15,16,32)$ invariant under $\mathrm{AGL}(5,2)$ or $\mathrm{PGL}(2,31)$ (21 September 2026) and posted the observation on prime-order symmetries formalized in Section~\ref{sec:frontier} (28 September 2026)~\cite{Veljjanoski}. Brouwer's table~\cite{BrouwerJ} gives $\chi(J(2k,k))$ for $3 \le k \le 5$ and lower bounds above $k+1$ for $6 \le k \le 8$. Bonfioli's Lean development~\cite{Bonfioli}, free of \texttt{sorry} and using the three standard axioms for this part, proves that a colouring gives a Steiner system $S(t-1,t,k+t)$ for every $2 \le t \le k$; our derivation theorems and part~1 of Theorem~\ref{thm:frontier} restate this against the formal-conjectures definitions, and we do not claim them as new. Bonfioli's paper also relates $\chi(J(2k,k))$ to $\chi(J(2k-1,k-1))$, which casts Cayley's and Kramer and Mesner's results as the cases $k=4$ and $k=6$; our \lean{not\_property\_4'} and \lean{not\_property\_6'} follow this route.
+
+\paragraph{Steiner systems.} Mendelsohn and Hung showed by computer that no $S(4,5,15)$ exists and that there are four $S(3,4,14)$ up to isomorphism~\cite{MendelsohnHung,KOP}; \"Osterg\aa{}rd and Pottonen repeated the $S(4,5,15)$ search and showed that no $S(4,5,17)$ exists~\cite{OstergardPottonen}, building on the classification of the $1{,}054{,}163$ systems $S(3,4,16)$~\cite{KOP}. They and Koloto\u{g}lu and Magliveras describe $S(4,5,21)$ as the smallest open order~\cite{OstergardPottonen,KolotogluMagliveras}. Kramer and Mesner showed that at most two pairwise disjoint $S(5,6,12)$ exist~\cite{KramerMesner}; Cayley showed the same for Fano planes~\cite{Cayley}. We did not obtain the texts of Kramer and Mesner or of Cayley; we cite them for attribution only, and our certificates prove the non-existence of the large sets directly. We know Mendelsohn and Hung's paper only through the citations of later authors~\cite{OstergardPottonen}. For fixed $t$ and $k$, Steiner systems $S(t,k,n)$ exist for all sufficiently large $n$ satisfying the divisibility conditions~\cite{Keevash}; no Steiner system with $t \ge 6$ is known~\cite{Epoch}.
+
+\paragraph{Certified search.} Large computations have been checked inside proof assistants by reflection, as in the four-colour theorem~\cite{FourColour} and the Kepler conjecture~\cite{Flyspeck}; $R(4,5)=25$ was proved in HOL4 with only the HOL4 kernel trusted~\cite{R45}. SAT solvers produce proof certificates for combinatorial non-existence results such as Lam's problem~\cite{Lam}, and verified checkers such as cake\_lpr check them~\cite{cakelpr}; the empty hexagon number was verified in Lean on top of a SAT certificate checked by cake\_lpr outside Lean~\cite{Hexagon}; certified symmetry breaking~\cite{VeriPB-sym} and certified subgraph isomorphism~\cite{SubgraphIso} extend such certificates beyond clause learning. Our search is exact cover with the fewest-choices rule, as in Knuth's Algorithm~X~\cite{DLX}, and our reductions are isomorphism tests recorded as permutations, so the kernel checks them directly. What is new here is a certificate of this kind for the non-existence of $S(4,5,15)$, of about two million search nodes, replayed by the Lean kernel with no external checker, and the encoding of large sets as exact covers with colour points.
+
+\paragraph{Formal design theory.} The Isabelle Archive of Formal Proofs has a design-theory library~\cite{DesignTheoryAFP} with Steiner systems as a definition, block-derived designs for balanced designs, and existence conditions for $t=2$; it has no large sets or point-derived designs. Our earlier work replaced solver output by kernel-checked certificates for the Kochen--Specker problem~\cite{MianKS}; here, as there, the search is untrusted and a small checker proved sound in Lean accepts or rejects its certificate.
+
+\section{General theorems}\label{sec:general}
+
+All theorems below are in the modules \texttt{Johnson835}, \texttt{Steiner}, \texttt{JohnsonBound} and \texttt{Bridge} of the directory \file{Veles}.
+
+\paragraph{Clique bound.} For a $(k-1)$-set $T$, the $k+1$ sets $T \cup \{x\}$, $x \notin T$, pairwise meet in $T$; they form a clique, so $k+1 \le \chi(J(2k,k))$ for $k \ge 1$ (\lean{Veles.J835.clique\_bound}). The $k$-subsets of a $(k+1)$-set are also pairwise adjacent. Hence a colouring has $\mathrm{Property}(k)$ exactly when it is a proper colouring of $J(2k,k)$ with $k+1$ colours (\lean{Veles.J835.property\_iff\_proper}).
+
+\begin{theorem}\label{thm:equiv}
+For every $k \ge 1$: $\chi(J(2k,k)) = k+1 \iff \mathrm{Property}(k) \iff$ a large set $\LS(k-1,k,2k)$ of $k+1$ systems exists.
+\end{theorem}
+The first equivalence is \lean{Veles.J835.property\_iff\_chromaticNumber}; \lean{Veles.Results.Fills.property\_iff\_chromaticNumber} restates it with the text of the formal-conjectures statement, and \file{scripts/check\_upstream.py} checks that the text is identical. The second is \lean{Veles.J835.property\_iff\_largeSet}: the $k+1$ sets through a $(k-1)$-set form a clique, so each colour occurs exactly once among them and each colour class is an $S(k-1,k,2k)$; conversely two adjacent $k$-sets of the same system would both contain their $(k-1)$-set intersection.
+
+\paragraph{Derived systems.} The blocks of an $S(t+1,k+1,n+1)$ through the last point, with that point removed, form an $S(t,k,n)$ (\lean{Veles.Steiner.derived}); iterating, an $S(t,k,m)$ with $t \le k \le m$ gives an $S(t-d,k-d,m-d)$ for $d \le t$ (\lean{Veles.Steiner.nonempty\_iterate}). The same construction applied to each system of a large set gives a large set with the same number of systems (\lean{Veles.Steiner.LargeSet.derived}). Counting pairs (block, $t$-subset of the block) gives $|\text{blocks}| \binom{k}{t} = \binom{m}{t}$ (\lean{Veles.Steiner.card\_blocks\_mul}).
+
+\begin{theorem}[divisibility]\label{thm:matang}
+If $k \ge 1$ and an $S(k-1,k,2k)$ exists, then $k+1$ is prime. Hence $\chi(J(2k,k)) > k+1$ whenever $k+1$ is not prime, in particular for every odd $k>2$.
+\end{theorem}
+The first statement is the classical divisibility condition for Steiner systems at these parameters; the statement about $\chi$ is Ma and Tang's theorem; they reached the same divisibility for colourings by double counting on independent sets and then applied Lucas' theorem~\cite{MaTang}, and eigensolver and Dillies observed that the constant-weight code bound gives it too~\cite{Forum}. Our proof (\lean{Veles.J835.prime\_of\_steiner}) uses derived systems. Let $p$ be the least prime factor of $k+1$ and suppose $p<k+1$. Deriving $k-p$ times gives an $S(p-1,p,k+p)$, and the block count gives $p = \binom{p}{p-1} \mid \binom{k+p}{p-1}$, hence $p \mid (p-1)!\binom{k+p}{p-1} = (k+2)(k+3)\cdots(k+p)$. But $p \mid k+1$, so these $p-1$ factors are nonzero modulo $p$, a contradiction. The chromatic statements are \lean{Veles.J835.lt\_chromaticNumber\_of\_not\_prime} and \lean{Veles.J835.lt\_chromaticNumber\_of\_odd}.
+
+\paragraph{Johnson's bound.} \lean{Veles.JB.indepNum\_johnson\_le\_johnsonBound} proves $\alpha(J(n,k)) \le$ \lean{johnsonBound n 4 k} for all $n,k$, the formal-conjectures statement: in an independent set of $J(n+1,w+1)$, the members through a point, with the point removed, form an independent set of $J(n,w)$, and every member is counted $w+1$ times~\cite{Johnson62,BSSS}. With this bound substituted for the upstream lemma, the formal-conjectures proof of the odd case for $3 \le k \le 300$ would no longer rest on a \texttt{sorry}; we prove the odd case for all $k>2$ directly (Theorem~\ref{thm:matang}).
+
+\section{The certificate checker}\label{sec:checker}
+
+\paragraph{Exact covers.} Points are the numbers below $v$. Items are the $(k-1)$-subsets and blocks the $k$-subsets of $\{0,\dots,v-1\}$. For a set $X$ of items (the items already covered), \lean{Veles.Cover.IsCover} says that a set of blocks covers every item outside $X$ exactly once and no item of $X$, and \lean{Veles.Cover.NoExt} says that no such set exists. A Steiner system $S(k-1,k,v)$ is a cover of the empty state (\lean{Veles.Cover.isCover\_of\_steiner}); we call $X$ the state. Two rules prove \lean{NoExt}:
+\begin{itemize}
+\item branching (\lean{Veles.Cover.noExt\_branch}): if an item $T \notin X$ is chosen, the block that covers it is $T \cup \{x\}$ for some $x$, all of whose items lie outside $X$; if no such choice extends, nothing does;
+\item relabelling (\lean{Veles.Cover.noExt\_of\_map}): a bijection of the points that maps the items of $X$ exactly onto those of $Y$ maps covers of $X$ to covers of $Y$, so \lean{NoExt}~$Y$ gives \lean{NoExt}~$X$.
+\end{itemize}
+
+\paragraph{The checker.} A certificate is a stream of 16-bit fields. A nonzero field names an item by its point mask (the emitter refuses an item whose mask does not fit in 16 bits; in the certificates here every item branched on does); the checker verifies that it is a $(k-1)$-set not yet covered and replays one subtree for each compatible block, in increasing order of the added point. A zero field is followed by an index into the certificate's table of permutations and an index into its table of target states; the checker verifies that the permutation maps the current state exactly onto the target state, whose \lean{NoExt} is a hypothesis. States are natural numbers used as bit sets indexed by point masks, so the kernel's arbitrary-precision operations do the work. The checker is structural recursion on a fuel argument, so \texttt{decide +kernel} evaluates it in the kernel without the elaborator. The kernel's built-in arithmetic on natural numbers (addition, shifts, bitwise operations) is part of the trusted kernel. The soundness theorem \lean{Veles.Checker.node\_sound} states that a successful replay proves \lean{NoExt}; the targets' hypotheses are discharged by the theorems of other certificate modules, and the dependency between modules is acyclic because Lean's import graph is acyclic and a module can use only the theorems of modules it imports (every target is also the root of a tree with more blocks than the root of the tree that refers to it, which \file{certgen/verify\_cert.py} checks).
+
+\paragraph{Large sets.} A large set $\LS(k-1,k,n)$ of $m$ systems becomes an exact cover handled by the same checker (\file{Veles/LargeSetCover.lean}). Add $m$ colour points $n,\dots,n+m-1$ and replace the block $B$ of system $c$ by $B \cup \{n+c\}$. This is an exact cover of $k$-subsets by $(k+1)$-subsets, so the checker runs with block size $k+1$. Every $k$-subset of the $n+m$ points with at most one colour point is then covered exactly once, and the $k$-subsets with two or more colour points, which no such block contains, are covered from the start. \lean{Veles.LSC.isCover\_of\_largeSet} proves that a large set gives a cover of this state, so a refutation certificate for it rules the large set out (\lean{Veles.LSC.not\_largeSet\_of\_noExt}).
+
+\paragraph{Generation and checking.} The certificates are produced by a search program in C (\file{certgen/gen\_cert.c}) that branches on the uncovered item with the fewest compatible blocks and uses symmetry in two ways, both recorded as reduction nodes. First, in the first phases, siblings within the first $D$ levels of a phase whose states are isomorphic are reduced to the first of them ($D=10$, first phase only, for $S(4,5,15)$; $D=8$, first three phases, for the large sets of order 11 and 12; \file{scripts/regen\_certs.sh} lists all settings). Second, the search fills the items in phases (for $S(4,5,15)$: first the items containing both 13 and 14, then those containing 14, then the rest), and when a phase is complete the state is reduced to the first isomorphic representative seen. The search program is not trusted. A second program written in Python from the same specification (\file{certgen/gen\_cert\_b.py}), sharing no code with the first, produces byte-identical output, compared by SHA-256; a third program (\file{certgen/verify\_cert.py}) replays every certificate independently; and the kernel replays it last. Every certificate is recorded in an append-only ledger (\file{docs/ledger}) with the SHA-256 hashes of both generator outputs and of the cut certificate.
+
+\section{Certificates}\label{sec:certs}
+
+\begin{theorem}\label{thm:s4515}
+No Steiner system $S(4,5,15)$ exists (\lean{Veles.Results.no\_S\_4\_5\_15}).
+\end{theorem}
+The search finds two representatives, up to isomorphism, when the items containing 13 and 14 are covered, and four when those containing 14 are covered. These are the numbers of Steiner triple systems of order 13 and of $S(3,4,14)$~\cite{MendelsohnHung,KOP}; \file{scripts/check\_reps.py} checks that the representatives are such systems and pairwise non-isomorphic (by Pasch counts, and, for the $S(3,4,14)$, by how many blocks lie inside the union of each pair of disjoint blocks). Table~\ref{tab:certs} lists the certificates; each of the four is refuted directly, in $46{,}100$ to $61{,}910$ branch nodes. The certificate has $1{,}944{,}980$ branch nodes in 24 trees with $1{,}237$ reductions. We cut it into $1{,}497$ trees of at most $2{,}000$ branch nodes, one Lean module each. In the final gate the kernel rebuilt all $2{,}093$ modules of the development, sixteen at a time on a 32-core machine that was also running other jobs, in $5{,}215$ seconds; the $1{,}498$ modules of this certificate took $11.5$ module build hours (the sum of their build times under that load). With the derivation theorem, $\mathrm{Property}(10)$ would give an $S(4,5,15)$ (\lean{Veles.Results.not\_property\_10}).
+
+\begin{theorem}\label{thm:ls}
+There is no large set $\LS(3,4,8)$ of five systems, no $\LS(2,3,7)$ of five Fano planes, no $\LS(5,6,12)$ of seven systems and no $\LS(4,5,11)$ of seven systems.
+\end{theorem}
+These are \lean{Veles.Results.not\_largeSet\_3\_4\_8}, \lean{not\_largeSet\_2\_3\_7}, \lean{not\_largeSet\_5\_6\_12} and \lean{not\_largeSet\_4\_5\_11}. With Theorem~\ref{thm:equiv} the first and the third exclude $k=4$ and $k=6$ directly (\lean{not\_property\_4}, \lean{not\_property\_6}); the second and fourth exclude them again through the derived large sets (\lean{not\_property\_4'}, \lean{not\_property\_6'}). For $\LS(5,6,12)$ and $\LS(4,5,11)$ the phases build one system at a time, and the first phase collapses to one representative; the certificates have $2{,}021$ and $1{,}268$ branch nodes.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrrrl@{}}
+\toprule
+Certificate & Branch nodes & Trees & Reductions & Lean modules & Generators agree \\
+\midrule
+$S(4,5,15)$ & 1{,}944{,}980 & 24 & 1{,}237 & 1{,}498 & yes \\
+$\LS(3,4,8)$ & 132 & 7 & 13 & 9 & yes \\
+$\LS(2,3,7)$ & 69 & 8 & 22 & 10 & yes \\
+$\LS(5,6,12)$ & 2{,}021 & 258 & 299 & 260 & yes \\
+$\LS(4,5,11)$ & 1{,}268 & 288 & 327 & 290 & yes \\
+$S(3,4,9)$ (test) & 4 & 4 & 12 & 5 & yes \\
+\bottomrule
+\end{tabular}
+\caption{The certificates. Branch nodes, trees and reductions are counted before the cut into modules; the module count includes one module per cut tree, one for the pre-covered state of a large set, and one top module. $S(3,4,9)$ is a test: no such system exists, by divisibility.}
+\label{tab:certs}
+\end{table}
+
+\section{The frontier}\label{sec:frontier}
+
+\begin{theorem}\label{thm:frontier}
+Let $k \ge 1$.
+\begin{enumerate}
+\item If $k \ge 5$, $\mathrm{Property}(k)$ gives an $S(4,5,k+5)$; in particular $\mathrm{Property}(16)$ gives an $S(4,5,21)$ (\lean{Veles.Bridge.steiner\_4\_5\_of\_property}, \lean{Veles.Bridge.steiner\_4\_5\_21\_of\_property\_16}).
+\item If $7 \le k \le 192$, $\mathrm{Property}(k)$ gives a \lean{LargeSteinerSystemWitness} (in Lean, its existence as \lean{Nonempty}; the FrontierMath problem asks for explicit blocks): an $S(t,k',n)$ with $n > k' > t > 5$, $t < 10$ and $n < 200$, the formal-conjectures statement of the FrontierMath problem (\lean{Veles.Bridge.witness\_of\_property}). For this construction the range is exact: for every $k$, some number of derivations of $S(k-1,k,2k)$ lands in this window exactly when $7 \le k \le 192$ (\lean{Veles.Bridge.range\_exact}).
+\item If $p$ is a prime with $k+1 < p \le 2k$, no proper $(k+1)$-colouring of $J(2k,k)$ is invariant, colour classes going to colour classes, under a permutation of the points of order $p$ (\lean{Veles.Sym.no\_invariant\_colouring}).
+\end{enumerate}
+\end{theorem}
+In part 2 the witness comes from $d=0$ derivations for $k \le 10$, $d=k-10$ for $11 \le k \le 189$ and $d=2k-199$ for $190 \le k \le 192$. A positive answer for any open $k \le 192$ would therefore give an example for the FrontierMath problem, for which none is known.
+
+Part 3 is an observation posted by veljjanoski, stated and proved for all $k \ge 3$ in his repository~\cite{Veljjanoski}, which attributes it to an AI review agent and claims no novelty, and for $k=16$ on the forum~\cite{Forum}; we formalize the argument for all $k \ge 1$. The permutation induced on the $k+1$ colours has order dividing $p$, and $p \nmid (k+1)!$, so it fixes every colour. Since $2k < 2p$ the permutation is one $p$-cycle and $2k-p$ fixed points. The fixed points together with $p-k$ consecutive points $x, gx, \dots$ of the cycle form a $k$-set $B$ with $|B \cap gB| = k-1$, so $B$ and $gB$ are adjacent and have the same colour. For $k=16$ the primes are exactly $19,23,29,31$ (\lean{Veles.Sym.no\_invariant\_colouring\_16}); the theorem does not cover $p=17$: an element of order 17 may permute the 17 colour classes cyclically.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.31\linewidth}@{}}
+\toprule
+$k$ & Status & Here \\
+\midrule
+$1, 2$ & $\mathrm{Property}(k)$ holds & kernel-checked (\lean{property\_1}, \lean{property\_2}) \\
+$k+1$ composite ($3,5,7,8,9,11,13,14,15,\dots$) & fails & kernel-checked, all $k$ (Thm.~\ref{thm:matang}) \\
+$4$ & fails & kernel-checked certificate (Thm.~\ref{thm:ls}) \\
+$6$ & fails & kernel-checked certificate (Thm.~\ref{thm:ls}) \\
+$10$ & fails & kernel-checked certificate (Thm.~\ref{thm:s4515}) \\
+$12$ & fails & cited (code-table bound~\cite{AVZweb}; $S(4,5,17)$~\cite{OstergardPottonen}); reduction to $S(4,5,17)$ checked \\
+$16$ & open; would give $S(4,5,21)$ and solve FrontierMath & reductions and symmetry exclusions checked \\
+$18, 22, 28, 30, \dots, 192$ ($k+1$ prime) & open; would solve FrontierMath & reductions and symmetry exclusions checked \\
+$k+1$ prime, $k > 192$ & open & reduction to $S(4,5,k+5)$ and symmetry exclusions checked \\
+\bottomrule
+\end{tabular}
+\caption{Status of every $k$. ``Kernel-checked'' means a Lean theorem accepted by the kernel under the axiom gate (Section~\ref{sec:trust}).}
+\label{tab:cases}
+\end{table}
+
+\section{Trusted base and reproduction}\label{sec:trust}
+
+The trusted base is the Lean kernel, including its built-in arithmetic on natural numbers, with the axioms \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}. Every theorem the paper names is listed in \file{Veles/AxiomCheck.lean} and must depend on no other axiom; \file{Veles/AxiomAudit.lean} checks every theorem, definition and opaque constant of every module of the development, found mechanically from the compiled environment, against the same set. The statements of the results in \file{Veles/Results.lean} are written by hand; the certificate modules only supply proofs of the \lean{NoExt} statements they use. A source scan (\file{scripts/scan\_sources.py}) rejects \texttt{sorry}, \texttt{native\_decide}, \texttt{bv\_decide}, axiom and opaque declarations, and every command that can add declarations without the kernel or change elaboration (\texttt{run\_cmd}, \texttt{elab}, \texttt{macro}, \texttt{syntax}, \texttt{notation} outside the copied upstream definitions, and similar), after removing comments and string literals; planted probes check the rules on 15 examples (\file{Veles/AxiomAudit.lean} is exempt from the ban on \texttt{run\_cmd}, which it uses to inspect the environment).
+
+The gate \file{scripts/pod\_gate.sh} checks the Lean and Mathlib versions against \file{lean-toolchain} and \file{lakefile.toml}, deletes all build products, regenerates the certificate modules from the compressed certificates in \file{certs} (whose hashes \file{certs/SHA256SUMS} pins), builds every module, runs the checks above, and replays every declaration of the 44 modules outside the three large certificates (20 hand-written modules and the 24 generated modules of the three small certificates) with \texttt{leanchecker}. The modules of the three large certificates are checked by the kernel during the build; replaying them again would repeat most of the build. Each certificate's top module also proves, in the kernel, that its first tree's stream with one field changed, and with its last word removed, is rejected. The final run of the gate, recorded in \file{docs/verification/gate\_freeze.log}, passed: $67$ manifest theorems, $6{,}702$ theorems audited, $44$ modules replayed. Building all modules took $16.3$ module build hours; no module took more than $190$ seconds, and the largest module build needed at most $55.1$\,GiB of memory. \file{scripts/regen\_certs.sh} regenerates every certificate and checks it against \file{certs/SHA256SUMS}.
+
+\section{Limitations}\label{sec:limits}
+
+The problem is open and we do not claim otherwise. The case $k=12$ rests on the non-existence of $S(4,5,17)$ or on the published code-table bound, both computer results, which we cite; its search extends the $1{,}054{,}163$ systems $S(3,4,16)$~\cite{KOP}, and we did not attempt a certificate. We state it as a hypothesis (\lean{Veles.Results.not\_property\_12\_of}). The complement property of colourings~\cite{Forum} is not formalized. Our Lean definition of large sets is ours; formal-conjectures has none. We use newer versions of Lean and Mathlib than formal-conjectures; the copied definitions are byte-identical but are compiled against our versions. Reproducing the certificate replay needs about 16 hours of module build time (spread over many processes) and a machine with tens of gigabytes of memory.
+
+\section{Use of AI tools}\label{sec:ai}
+
+A large language model (LLM) was used extensively in this work: Claude Opus~5.5 (Anthropic), in September and October 2026. Under the authors' direction the LLM searched the literature, read the primary sources, designed the certificate format and the search programs, and wrote the Lean development, the programs and the test scripts, and it generated much of the text of this paper, which the authors reviewed and revised. The authors take full intellectual responsibility for the entire content of the paper, including the text, the references and every claim.
+
+No claim rests on the model's judgment. Every statement called proved is a Lean theorem accepted by the kernel under the axiom gate of Section~\ref{sec:trust}; the certificates are checked by the kernel, and the search programs that produced them are outside the trusted base. The two generators and the independent replay program were written by the model as well; they add confidence in the certificates but are not needed for their correctness. Statements about the work of others were checked at their sources where we could obtain them (all except \cite{MendelsohnHung,KramerMesner,Cayley}), as recorded in our research notes (not part of the repository); bibliographic data for every reference was fetched from Crossref, arXiv, GitHub, zbMATH or the publisher.
+
+\section*{Code and data}
+The Lean development, the certificate programs, the certificates, the ledgers and the final gate log are in the repository of this paper \url{https://github.com/ibrahimmian36/veles}, under the Apache 2.0 license.
+
+\begingroup\raggedright
+\begin{thebibliography}{99}
+\bibitem{EP835} T.~F. Bloom, Erd\H{o}s Problem \#835, \url{https://www.erdosproblems.com/835}, accessed 30 September 2026.
+\bibitem{Er74} P.~Erd\H{o}s, problem on p.~283 of: Unsolved problems, in: C.~Berge, D.~Ray-Chaudhuri (eds.), \emph{Hypergraph Seminar} (Proc. First Working Sem., Ohio State Univ., Columbus, Ohio, 1972), Lecture Notes in Math. 411, Springer, Berlin, 1974, 278--287. doi:10.1007/BFb0066199.
+\bibitem{Forum} Erd\H{o}s Problems forum, thread 835, \url{https://www.erdosproblems.com/forum/thread/835}, comments of 31 December 2025 to 28 September 2026, accessed 30 September 2026; comments cited by author and date.
+\bibitem{MaTang} J.~Ma, Q.~Tang, A note on Erd\H{o}s Problem \#835, \url{https://github.com/QuanyuTang/erdos-problem-835}, 31 December 2025, revised 1 January 2026.
+\bibitem{MendelsohnHung} N.~S. Mendelsohn, S.~H.~Y. Hung, On the Steiner systems $S(3,4,14)$ and $S(4,5,15)$, \emph{Utilitas Math.} 1 (1972) 5--95.
+\bibitem{OstergardPottonen} P.~R.~J. \"Osterg\aa{}rd, O.~Pottonen, There exists no Steiner system $S(4,5,17)$, \emph{J. Combin. Theory Ser. A} 115 (2008) 1570--1573. doi:10.1016/j.jcta.2008.04.005.
+\bibitem{KolotogluMagliveras} E.~Koloto\u{g}lu, S.~S. Magliveras, On the possible automorphism groups of a Steiner quintuple system of order 21, \emph{J. Combin. Des.} 22 (2014) 495--505. doi:10.1002/jcd.21370.
+\bibitem{KramerMesner} E.~S. Kramer, D.~M. Mesner, Intersections among Steiner systems, \emph{J. Combin. Theory Ser. A} 16 (1974) 273--285. doi:10.1016/0097-3165(74)90054-5.
+\bibitem{Cayley} A.~Cayley, On the triadic arrangements of seven and fifteen things, \emph{Philos. Mag.} (3) 37 (1850) 50--53. doi:10.1080/14786445008646550.
+\bibitem{Keevash} P.~Keevash, The existence of designs, arXiv:1401.3665, 2014.
+\bibitem{Epoch} Epoch AI, Large Steiner Systems, FrontierMath: Open Problems, \url{https://epoch.ai/frontiermath/open-problems/large-steiner-systems}, 2026, accessed 30 September 2026; problem credited to K.~Marwaha; Lean statement by \ext{franzhusch}, formal-conjectures pull request 3524.
+\bibitem{FC} Google DeepMind, formal-conjectures, \url{https://github.com/google-deepmind/formal-conjectures}, commit \ext{137aec5c7abd3aa61f7a73138a97279acfc79e93}, files \ext{FormalConjectures/ErdosProblems/835.lean}, \ext{FormalConjectures/Wikipedia/SteinerSystem.lean}, \ext{FormalConjecturesForMathlib/Combinatorics/SimpleGraph/Johnson.lean}, \ext{FormalConjecturesForMathlib/Combinatorics/SimpleGraph/Clique.lean} and \ext{FormalConjecturesForMathlib/Data/Nat/Prime/Composite.lean}.
+\bibitem{Bonfioli} V.~Bonfioli, Erd\H{o}s Problem \#835: two new cases, and the structure of the obstruction to three pairwise disjoint Steiner systems $S(m-1,m,2m)$, \url{https://github.com/ElVec1o/erdos835-paper}, July 2026; Zenodo, doi:10.5281/zenodo.21431724.
+\bibitem{Veljjanoski} \ext{veljjanoski}, \ext{erdos835}, \url{https://github.com/veljjanoski/erdos835}, accessed 30 September 2026.
+\bibitem{BrouwerJ} A.~E. Brouwer, Johnson graphs, \url{https://aeb.win.tue.nl/graphs/Johnson.html}, accessed 30 September 2026.
+\bibitem{Johnson62} S.~M. Johnson, A new upper bound for error-correcting codes, \emph{IRE Trans. Inform. Theory} 8 (1962) 203--207. doi:10.1109/TIT.1962.1057714.
+\bibitem{KOP} P.~Kaski, P.~R.~J. \"Osterg\aa{}rd, O.~Pottonen, The Steiner quadruple systems of order 16, \emph{J. Combin. Theory Ser. A} 113 (2006) 1764--1770. doi:10.1016/j.jcta.2006.03.017.
+\bibitem{BSSS} A.~E. Brouwer, J.~B. Shearer, N.~J.~A. Sloane, W.~D. Smith, A new table of constant weight codes, \emph{IEEE Trans. Inform. Theory} 36 (1990) 1334--1380. doi:10.1109/18.59932.
+\bibitem{DesignTheoryAFP} C.~Edmonds, L.~C. Paulson, Combinatorial design theory, \emph{Archive of Formal Proofs}, August 2021, \url{https://isa-afp.org/entries/Design_Theory.html}.
+\bibitem{MianKS} S.~Siddique, I.~Mian, Machine-checked certificates for the geometric half of the minimum Kochen--Specker bound, arXiv:2607.26413, 2026.
+\bibitem{Lean4} L.~de~Moura, S.~Ullrich, The Lean 4 theorem prover and programming language, \emph{CADE 2021}, LNCS 12699, pp.~625--635. doi:10.1007/978-3-030-79876-5\_37.
+\bibitem{Mathlib} The mathlib Community, The Lean mathematical library, \emph{CPP 2020}, pp.~367--381. doi:10.1145/3372885.3373824.
+\bibitem{Hexagon} B.~Subercaseaux, W.~Nawrocki, J.~Gallicchio, C.~Codel, M.~Carneiro, M.~J.~H. Heule, Formal verification of the empty hexagon number, in: \emph{15th International Conference on Interactive Theorem Proving (ITP 2024)}, LIPIcs vol.~309 (2024) 35:1--35:19. doi:10.4230/LIPIcs.ITP.2024.35 (arXiv:2403.17370)
+\bibitem{R45} T.~Gauthier, C.~E. Brown, A formal proof of $R(4,5)=25$, in: \emph{15th International Conference on Interactive Theorem Proving (ITP 2024)}, LIPIcs vol.~309 (2024) 16:1--16:18. doi:10.4230/LIPIcs.ITP.2024.16 (arXiv:2404.01761)
+\bibitem{Lam} C.~Bright, K.~K.~H. Cheung, B.~Stevens, I.~Kotsireas, V.~Ganesh, A SAT-based resolution of Lam's problem, \emph{Proceedings of the AAAI Conference on Artificial Intelligence} 35(5) (2021) 3669--3676. doi:10.1609/aaai.v35i5.16483 (arXiv:2012.04715)
+\bibitem{VeriPB-sym} B.~Bogaerts, S.~Gocht, C.~McCreesh, J.~Nordstr\"om, Certified dominance and symmetry breaking for combinatorial optimisation, \emph{Journal of Artificial Intelligence Research} 77 (2023) 1539--1589. doi:10.1613/jair.1.14296
+\bibitem{SubgraphIso} S.~Gocht, C.~McCreesh, J.~Nordstr\"om, Subgraph isomorphism meets cutting planes: solving with certified solutions, in: \emph{Proceedings of the Twenty-Ninth International Joint Conference on Artificial Intelligence (IJCAI 2020)} (2020) 1134--1140. doi:10.24963/ijcai.2020/158
+\bibitem{cakelpr} Y.~K. Tan, M.~J.~H. Heule, M.~O. Myreen, Verified propagation redundancy and compositional UNSAT checking in CakeML, \emph{International Journal on Software Tools for Technology Transfer} 25 (2023) 167--184. doi:10.1007/s10009-022-00690-y
+\bibitem{FourColour} G.~Gonthier, Formal proof---the four-color theorem, \emph{Notices of the American Mathematical Society} 55(11) (2008) 1382--1393.
+\bibitem{Flyspeck} T.~Hales, M.~Adams, G.~Bauer, T.~D. Dang, J.~Harrison, L.~T. Hoang, C.~Kaliszyk, V.~Magron, S.~McLaughlin, T.~T. Nguyen, Q.~T. Nguyen, T.~Nipkow, S.~Obua, J.~Pleso, J.~Rute, A.~Solovyev, T.~H.~A. Ta, N.~T. Tran, T.~D. Trieu, J.~Urban, K.~Vu, R.~Zumkeller, A formal proof of the Kepler conjecture, \emph{Forum of Mathematics, Pi} 5 (2017) e2. doi:10.1017/fmp.2017.1
+\bibitem{DLX} D.~E. Knuth, Dancing links, in: \emph{Millennial Perspectives in Computer Science} (2000) 187--214. arXiv:cs/0011047
+\bibitem{AVZ} E.~Agrell, A.~Vardy, K.~Zeger, Upper bounds for constant-weight codes, \emph{IEEE Transactions on Information Theory} 46(7) (2000) 2373--2395. doi:10.1109/18.887851
+\bibitem{AVZweb} E.~Agrell, Bounds for constant-weight codes (web version of the tables in \cite{AVZ}, with later updates), \url{https://codes.se/bounds/cw.html}.
+\bibitem{EtzionBitan} T.~Etzion, S.~Bitan, On the chromatic number, colorings, and codes of the Johnson graph, \emph{Discrete Applied Mathematics} 70(2) (1996) 163--175. doi:10.1016/0166-218X(96)00104-7
+\end{thebibliography}
+\endgroup
+
+\end{document}

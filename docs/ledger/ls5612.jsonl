@@ -1,0 +1,7 @@
+{"certificate": "ls5612", "claim": "no exact cover of the 6-subsets of range(19) by 7-subsets extending the pre-covered items", "date": "2026-10-01", "kind": "header", "status": "exhausted"}
+{"D": 8, "DP": 3, "k": 7, "kind": "params", "phases": [4096, 8192, 16384], "pre_items": 20664, "pre_items_sha256": "fdca53b7bc9878ee5ffb00a7704b54642895033325efa72badfb7caf25a30a72", "v": 19}
+{"bytes": 35988870, "impl": "certgen/gen_cert.c", "kind": "generate", "sha256": "9fe1301846138c78f9895a319f6de8ca910600f03d0c6675f60a795cf41c0541"}
+{"bytes": 35988870, "impl": "certgen/gen_cert_b.py", "kind": "generate", "sha256": "9fe1301846138c78f9895a319f6de8ca910600f03d0c6675f60a795cf41c0541"}
+{"branch_nodes": 2021, "impl": "certgen/verify_cert.py", "input_sha256": "9fe1301846138c78f9895a319f6de8ca910600f03d0c6675f60a795cf41c0541", "kind": "verify", "reductions": 299, "result": "PASS", "trees": 258}
+{"branch_nodes": 2021, "impl": "certgen/emit_lean.py", "kind": "split", "reductions": 299, "result": "PASS", "sha256": "5821c2617060f91ee716009c88d808f3c865d8bee23f67098f0110dc0846deea", "trees": 258}
+{"build_all_ok": true, "kind": "kernel", "log_sha256": "da09c4e68df343b5bac2be83ecd3005473481d10b144a4a36fd407cd6c656671", "module_prefix": "Veles/LS5612", "modules_ok": 260}

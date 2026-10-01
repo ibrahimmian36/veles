@@ -1,0 +1,7 @@
+{"certificate": "cert9", "claim": "no exact cover of the 3-subsets of range(9) by 4-subsets", "date": "2026-10-01", "kind": "header", "status": "exhausted"}
+{"D": 4, "DP": 1, "k": 4, "kind": "params", "phases": [256], "pre_items": 0, "pre_items_sha256": null, "v": 9}
+{"bytes": 364, "impl": "certgen/gen_cert.c", "kind": "generate", "sha256": "31832dfd19c7ae5888c1821b6a7a7ea67db153e6393385b73b9754bba079d6bf"}
+{"bytes": 364, "impl": "certgen/gen_cert_b.py", "kind": "generate", "sha256": "31832dfd19c7ae5888c1821b6a7a7ea67db153e6393385b73b9754bba079d6bf"}
+{"branch_nodes": 4, "impl": "certgen/verify_cert.py", "input_sha256": "31832dfd19c7ae5888c1821b6a7a7ea67db153e6393385b73b9754bba079d6bf", "kind": "verify", "reductions": 12, "result": "PASS", "trees": 4}
+{"branch_nodes": 4, "impl": "certgen/emit_lean.py", "kind": "split", "reductions": 12, "result": "PASS", "sha256": "31832dfd19c7ae5888c1821b6a7a7ea67db153e6393385b73b9754bba079d6bf", "trees": 4}
+{"build_all_ok": true, "kind": "kernel", "log_sha256": "da09c4e68df343b5bac2be83ecd3005473481d10b144a4a36fd407cd6c656671", "module_prefix": "Veles/Cert9", "modules_ok": 5}

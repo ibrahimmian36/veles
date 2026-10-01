@@ -1,0 +1,7 @@
+{"certificate": "ls348", "claim": "no exact cover of the 4-subsets of range(13) by 5-subsets extending the pre-covered items", "date": "2026-10-01", "kind": "header", "status": "exhausted"}
+{"D": 6, "DP": 1, "k": 5, "kind": "params", "phases": [1], "pre_items": 365, "pre_items_sha256": "2bdc3624ee0ea61b8d485830fe4ff817130cd6003abee1828be864e5df70c254", "v": 13}
+{"bytes": 14081, "impl": "certgen/gen_cert.c", "kind": "generate", "sha256": "f2712512d5554c488e6446a597ba23dd7042025aca83e5207670c1cf9a51c986"}
+{"bytes": 14081, "impl": "certgen/gen_cert_b.py", "kind": "generate", "sha256": "f2712512d5554c488e6446a597ba23dd7042025aca83e5207670c1cf9a51c986"}
+{"branch_nodes": 132, "impl": "certgen/verify_cert.py", "input_sha256": "f2712512d5554c488e6446a597ba23dd7042025aca83e5207670c1cf9a51c986", "kind": "verify", "reductions": 13, "result": "PASS", "trees": 7}
+{"branch_nodes": 132, "impl": "certgen/emit_lean.py", "kind": "split", "reductions": 13, "result": "PASS", "sha256": "09b44ac9a3cd8093fefd973cf89ab585e10369a585307100dbb5db77dfa5911f", "trees": 7}
+{"build_all_ok": true, "kind": "kernel", "log_sha256": "da09c4e68df343b5bac2be83ecd3005473481d10b144a4a36fd407cd6c656671", "module_prefix": "Veles/LS348", "modules_ok": 9}

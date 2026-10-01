@@ -1,0 +1,7 @@
+{"certificate": "ls237", "claim": "no exact cover of the 3-subsets of range(12) by 4-subsets extending the pre-covered items", "date": "2026-10-01", "kind": "header", "status": "exhausted"}
+{"D": 6, "DP": 1, "k": 4, "kind": "params", "phases": [1], "pre_items": 80, "pre_items_sha256": "29eedb15e3f6e0f34a41d8bef8c07236b0f3da759f22b1093d6bbc2da415dfd4", "v": 12}
+{"bytes": 4362, "impl": "certgen/gen_cert.c", "kind": "generate", "sha256": "f2c34e7c0d7da9daa7b14a2acb98c6b4cd098dd3b609aef2687c855e5f62ffc3"}
+{"bytes": 4362, "impl": "certgen/gen_cert_b.py", "kind": "generate", "sha256": "f2c34e7c0d7da9daa7b14a2acb98c6b4cd098dd3b609aef2687c855e5f62ffc3"}
+{"branch_nodes": 69, "impl": "certgen/verify_cert.py", "input_sha256": "f2c34e7c0d7da9daa7b14a2acb98c6b4cd098dd3b609aef2687c855e5f62ffc3", "kind": "verify", "reductions": 22, "result": "PASS", "trees": 8}
+{"branch_nodes": 69, "impl": "certgen/emit_lean.py", "kind": "split", "reductions": 22, "result": "PASS", "sha256": "37d34abe24c2a55464fb99d0aaf9fa1e9f7ca0aff83d805705d1a2fc7f9c04ff", "trees": 8}
+{"build_all_ok": true, "kind": "kernel", "log_sha256": "da09c4e68df343b5bac2be83ecd3005473481d10b144a4a36fd407cd6c656671", "module_prefix": "Veles/LS237", "modules_ok": 10}
